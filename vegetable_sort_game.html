@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>لعبة تصنيف الخضراوات</title>
+  <style>
+    * {margin:0;padding:0;box-sizing:border-box;}
+    body{
+      font-family: Arial,"Noto Sans Arabic",sans-serif;
+      background: linear-gradient(135deg,#bfeec3 0%,#dff4ff 50%,#ffe2ec 100%);
+      min-height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      padding:20px;
+      color:#243127;
+    }
+    .container{
+      background:white;
+      border-radius:30px;
+      padding:30px;
+      max-width:700px;
+      width:100%;
+      box-shadow:0 20px 60px rgba(0,0,0,0.15);
+    }
+    .title{font-size:40px;color:#205a37;margin-bottom:10px;font-weight:bold;text-align:center;}
+    .emoji{font-size:100px;margin:20px 0;text-align:center;}
+    .veg-name{font-size:32px;color:#24553a;margin:15px 0;font-weight:bold;text-align:center;}
+    .question{
+      font-size:20px;color:#333;background:#f0f7f0;padding:15px;border-radius:15px;margin-bottom:20px;text-align:center;
+    }
+    .progress{display:flex;justify-content:space-between;margin-bottom:10px;font-size:16px;font-weight:bold;color:#555;}
+    .progress-bar{width:100%;height:15px;background:#ddd;border-radius:10px;margin:10px 0 18px;overflow:hidden;}
+    .progress-fill{height:100%;background:linear-gradient(90deg,#82d989,#3fa75b);transition:width .4s;width:0;}
+    .voice-btns{display:flex;gap:10px;margin-bottom:20px;}
+    .voice-btn{
+      flex:1;padding:12px;border:2px solid #205a37;background:white;color:#205a37;
+      font-size:16px;font-weight:bold;border-radius:10px;cursor:pointer;
+    }
+    .buttons-container{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:20px;}
+    .choice-btn{
+      padding:25px;border:3px solid #ddd;border-radius:15px;cursor:pointer;
+      font-size:18px;font-weight:bold;background:white;
+    }
+    .leafy{border-color:#98d797;background:linear-gradient(135deg,#ecfaea,#ddecd9);}
+    .other{border-color:#f0c778;background:linear-gradient(135deg,#fff2df,#ffe8c0);}
+    .correct{border-color:#40b859!important;background:#e8f5e9!important;}
+    .wrong{border-color:#ef5b5b!important;background:#ffebee!important;}
+    .feedback{
+      text-align:center;font-size:20px;font-weight:bold;margin:15px 0;padding:15px;border-radius:10px;min-height:50px;
+      display:flex;align-items:center;justify-content:center;
+    }
+    .feedback.correct{background:#e8f5e9;color:#2e7d32;border:2px solid #4caf50;}
+    .feedback.wrong{background:#ffebee;color:#c62828;border:2px solid #ef5350;}
+    .feedback.hidden{display:none;}
+    .next-btn,.restart-btn{
+      background:linear-gradient(135deg,#47b15f,#2f7c4a);
+      color:white;border:none;padding:16px 32px;font-size:18px;font-weight:bold;border-radius:12px;cursor:pointer;width:100%;
+    }
+    .score{text-align:center;font-size:18px;color:#205a37;font-weight:bold;margin-top:20px;padding:15px;background:#f0fdf4;border-radius:10px;}
+    .finish-screen{display:none;text-align:center;}
+    .finish-screen.show{display:block;}
+    .finish-score{font-size:48px;color:#47b15f;font-weight:bold;margin:20px 0;}
+  </style>
+</head>
+<body>
+<div class="container">
+<div id="gameScreen">
+<div class="title">🥬 لعبة تصنيف الخضراوات</div>
+
+<div class="progress">
+<span id="qNum">السؤال 1 من 10</span>
+<span id="scoreDisplay">النقاط: 0 / 10</span>
+</div>
+
+<div class="progress-bar"><div class="progress-fill" id="progressBar"></div></div>
+
+<div class="voice-btns">
+<button class="voice-btn" onclick="playVoice()">🔊 اسمع السؤال</button>
+<button class="voice-btn" onclick="playVoice()">🔁 أعد السؤال</button>
+</div>
+
+<div class="emoji" id="vegEmoji">🥬</div>
+<div class="veg-name" id="vegName">خس</div>
+
+<div class="question">ما هذه الخضرة؟ هل هي ورقية أم أخرى؟</div>
+
+<div class="feedback hidden" id="feedback"></div>
+
+<div class="buttons-container">
+<button class="choice-btn leafy" id="leafyBtn" onclick="answer('leafy')">
+🍃<br>خضراوات ورقية<br><small>خس، سبانخ</small>
+</button>
+
+<button class="choice-btn other" id="otherBtn" onclick="answer('other')">
+🥕<br>خضراوات أخرى<br><small>جزر، خيار</small>
+</button>
+</div>
+
+<button class="next-btn" id="nextBtn" onclick="nextQ()" disabled>التالي ←</button>
+
+<div class="score">النقاط: <span id="score">0</span> / 10</div>
+</div>
+
+<div id="finishScreen" class="finish-screen">
+<div class="title">🎉 أحسنت!</div>
+<div class="finish-score" id="finalScore">0 / 10</div>
+<button class="restart-btn" onclick="startGame()">العب مرة أخرى 🚀</button>
+</div>
+</div>
+
+<script>
+const vegs=[
+{name:"خس",emoji:"🥬",type:"leafy",voice:"الخس"},
+{name:"سبانخ",emoji:"🥬",type:"leafy",voice:"السبانخ"},
+{name:"نعنع",emoji:"🌿",type:"leafy",voice:"النعنع"},
+{name:"بقدونس",emoji:"🌿",type:"leafy",voice:"البقدونس"},
+{name:"جزر",emoji:"🥕",type:"other",voice:"الجزر"},
+{name:"خيار",emoji:"🥒",type:"other",voice:"الخيار"},
+{name:"بندورة",emoji:"🍅",type:"other",voice:"البندورة"},
+{name:"بصل",emoji:"🧅",type:"other",voice:"البصل"}
+];
+
+let questions=[];
+let current=0;
+let score=0;
+let locked=false;
+let canNext=false;
+
+function shuffle(arr){
+let copy=[...arr];
+for(let i=copy.length-1;i>0;i--){
+let j=Math.floor(Math.random()*(i+1));
+[copy[i],copy[j]]=[copy[j],copy[i]];
+}
+return copy;
+}
+
+function speak(text){
+const u=new SpeechSynthesisUtterance(text);
+u.lang="ar-SA";
+u.rate=.85;
+speechSynthesis.cancel();
+speechSynthesis.speak(u);
+}
+
+function playVoice(){
+if(!questions[current])return;
+const v=questions[current];
+speak(`هذه ${v.voice}. هل هي خضراوات ورقية أم خضراوات أخرى؟`);
+}
+
+function startGame(){
+questions=shuffle(vegs).slice(0,10);
+current=0;
+score=0;
+showQuestion();
+}
+
+function showQuestion(){
+const veg=questions[current];
+document.getElementById("vegEmoji").textContent=veg.emoji;
+document.getElementById("vegName").textContent=veg.name;
+document.getElementById("qNum").textContent=`السؤال ${current+1} من 10`;
+document.getElementById("scoreDisplay").textContent=`النقاط: ${score} / 10`;
+document.getElementById("score").textContent=score;
+document.getElementById("progressBar").style.width=(current/10*100)+"%";
+
+document.getElementById("feedback").className="feedback hidden";
+
+locked=false;
+canNext=false;
+
+setTimeout(playVoice,300);
+}
+
+function answer(choice){
+if(locked)return;
+locked=true;
+
+const veg=questions[current];
+const correct=choice===veg.type;
+
+if(correct){
+score++;
+canNext=true;
+document.getElementById("score").textContent=score;
+document.getElementById("feedback").className="feedback correct";
+document.getElementById("feedback").textContent="صحيح! أحسنت!";
+speak("أحسنت!");
+document.getElementById("nextBtn").disabled=false;
+}else{
+document.getElementById("feedback").className="feedback wrong";
+document.getElementById("feedback").textContent="خطأ. حاول مرة أخرى.";
+speak("حاول مرة أخرى");
+locked=false;
+}
+}
+
+function nextQ(){
+if(!canNext)return;
+current++;
+if(current>=questions.length){endGame();return;}
+showQuestion();
+}
+
+function endGame(){
+document.getElementById("gameScreen").style.display="none";
+document.getElementById("finishScreen").classList.add("show");
+document.getElementById("finalScore").textContent=score+" / 10";
+speak(`انتهت اللعبة. حصلت على ${score} من عشرة`);
+}
+
+startGame();
+</script>
+</body>
+</html>
